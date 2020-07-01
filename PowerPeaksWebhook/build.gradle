@@ -1,0 +1,27 @@
+plugins {
+    id 'java'
+}
+
+repositories {
+    mavenCentral()
+//    flatDir {
+//        dirs 'libs'
+//    }
+}
+
+dependencies {
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.0'
+    testImplementation 'junit:junit:4.12'
+
+    implementation 'com.amazonaws:aws-lambda-java-core:1.2.1'
+    implementation 'com.amazonaws:aws-lambda-java-events:3.1.0'
+    implementation 'com.google.code.gson:gson:2.8.6'
+
+    compile group: 'joda-time', name: 'joda-time', version: '2.3'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-sns', version: '1.11.791'
+    compile group: 'com.amazonaws', name: 'aws-java-sdk-dynamodb', version: '1.11.793'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.11.0'
+    //implementation (name:'strava-swagger-jar-with-dependencies-1.0.0', ext:'jar')
+    compile fileTree(dir: 'libs', include: '*.jar')
+
+}

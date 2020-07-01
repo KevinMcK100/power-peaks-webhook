@@ -1,0 +1,10 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "strava-webhook"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-pr5vw62rd7qu"
+s3_prefix = "strava-webhook"
+region = "eu-west-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"

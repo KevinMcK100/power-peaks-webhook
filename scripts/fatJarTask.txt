@@ -1,0 +1,5 @@
+task fatJar(type: Jar) {
+    baseName = 'strava-swagger-jar-with-dependencies'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}

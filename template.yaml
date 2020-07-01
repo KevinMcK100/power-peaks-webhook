@@ -1,0 +1,94 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS
+
+  Sample SAM Template for AWS
+
+# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        AUTH_TABLE_NAME: AUTH
+        EVENTS_TABLE_NAME: EVENTS
+        ACTIVITIES_TABLE_NAME: ACTIVITIES
+        POWER_TABLE_NAME: POWER
+
+Resources:
+  WebhookEventProducerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PowerPeaksWebhook
+      Handler: com.kmk.powerpeaks.webhook.WebhookEventProducerFunction::handleRequest
+      Runtime: java11
+      Environment:
+        Variables:
+          SNS_TOPIC_ARN: !Ref TokenRefreshTopic
+          SQS_QUEUE: !Ref WebhookEventQueue
+          SQS_QUEUE_ARN: !GetAtt WebhookEventQueue.Arn
+          ACCOUNT_ID: !Ref AWS::AccountId
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName:
+              !GetAtt WebhookEventQueue.QueueName
+        - SNSPublishMessagePolicy:
+            TopicName:
+              !GetAtt TokenRefreshTopic.TopicName
+      Events:
+        WebhookEvent:
+          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Path: /event
+            Method: POST
+
+  TokenRefreshTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Protocol: lambda
+          Endpoint: !GetAtt TokenRefreshFunction.Arn
+
+  TokenRefreshFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PowerPeaksWebhook
+      Handler: com.kmk.powerpeaks.webhook.TokenRefreshFunction::handleRequest
+      Runtime: java11
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: AUTH
+      Events:
+        TokenRefreshEvent:
+          Type: SNS # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Topic: !Ref TokenRefreshTopic
+
+  WebhookEventQueue:
+    Type: AWS::SQS::Queue
+
+  WebhookEventProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: PowerPeaksWebhook
+      Handler: com.kmk.powerpeaks.webhook.WebhookEventProcessorFunction::handleRequest
+      Runtime: java11
+      Policies:
+        - SQSPollerPolicy:
+            QueueName:
+              !GetAtt WebhookEventQueue.QueueName
+        - DynamoDBReadPolicy:
+            TableName: AUTH
+        - DynamoDBCrudPolicy:
+            TableName: EVENTS
+        - DynamoDBCrudPolicy:
+            TableName: ACTIVITIES
+        - DynamoDBCrudPolicy:
+            TableName: POWER
+      Events:
+        WebhookEventMessage:
+          Type: SQS # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Properties:
+            Queue: !GetAtt WebhookEventQueue.Arn
